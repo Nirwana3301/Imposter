@@ -1,67 +1,331 @@
 @switch (gamePhase) {
   @case ('reveal') {
-    @if (currentPlayer) {
-      <h2>Am Zug: {{ currentPlayer.name }}</h2>
+    <div class="phase-container reveal-phase">
+      @if (currentPlayer) {
+        <h2>Am Zug: <span class="current-player-name">{{ currentPlayer.name }}</span></h2>
 
-      @if (!isCardRevealedForCurrentPlayer) {
-        <button (click)="revealCard()">
-          Karte aufdecken
-        </button>
-      } @else {
-        <div class="card-content">
-          <h3>Deine Rolle:</h3>
-          @if (currentPlayer.isImposter) {
-            <p class="imposter-text">Du bist der IMPOSTER!</p>
-          } @else {
-            <p>Das Wort ist: <strong>{{ secretWord }}</strong></p>
-          }
-          <button (click)="nextPlayer()">
-            Verstanden & Nächster Spieler
+        @if (!isCardRevealedForCurrentPlayer) {
+          <button class="action-btn reveal-action-btn" (click)="revealCard()">
+            🤫 Karte aufdecken
           </button>
-        </div>
+        } @else {
+          <div class="card-content animated-card">
+            <h3>Deine Rolle:</h3> @if (currentPlayer.isImposter) {
+            <p class="imposter-text">Du bist der IMPOSTER!</p>
+            @if (currentPlayer.hintWord) {
+              <p class="hint-word">Dein Hilfswort: <strong>{{ currentPlayer.hintWord }}</strong></p>
+            }
+          } @else {
+            <p class="secret-word-text">Das Wort ist: <strong class="highlight">{{ secretWord }}</strong></p>
+          }
+            <button class="action-btn next-player-btn" (click)="nextPlayer()">
+              Verstanden & Weiter ➡️
+            </button>
+          </div>
+        }
+      } @else {
+        <p class="loading-text">Lade Spielerdaten...</p>
       }
-    } @else {
-      <p>Lade Spielerdaten...</p> }
+    </div>
   }
   @case ('discussion') {
-    <h2>Diskussionsphase!</h2>
-    <p>Alle Spieler haben ihre Rollen gesehen. Findet den Imposter!</p>
-    <button (click)="resolveGame()">Spiel auflösen</button>
+    <div class="phase-container discussion-phase">
+      <h2>Diskussionsphase!</h2>
+      <p class="phase-description">Alle Spieler haben ihre Rollen gesehen. Findet den Imposter heraus und diskutiert, wer es sein könnte!</p>
+
+      @if (discussionStartingPlayer) {
+        <p class="starting-player-info">
+          🗣️ <strong class="highlight-starter">{{ discussionStartingPlayer }}</strong> fängt an zu reden!
+        </p>
+      }
+      <button class="action-btn resolve-game-btn" (click)="resolveGame()">🕵️ Spiel auflösen</button>
+    </div>
   }
   @case ('resolved') {
-    <h2>Auflösung</h2>
-    <p>Das geheime Wort war: <strong>{{ secretWord }}</strong></p>
-    <h3>Spieler und ihre Rollen:</h3>
-    <ul>
-      @for (player of allPlayers; track player.id) {
-        <li>
-          {{ player.name }}:
-          @if (player.isImposter) {
-            <span class="imposter-text">War ein IMPOSTER!</span>
-          } @else {
-            <span>Kannte das Wort.</span>
-          }
-        </li>
-      } @empty {
-        <li>Keine Spielerdaten für die Auflösung vorhanden.</li>
-      }
-    </ul>
-    <button (click)="startNewRound()">Neue Runde starten</button>
+    <div class="phase-container resolved-phase">
+      <h2>Auflösung</h2>
+      <p class="resolved-secret-word">Das geheime Wort war: <strong class="highlight">{{ secretWord }}</strong></p>
+      <h3>Spieler und ihre Rollen:</h3>
+      <ul class="player-roles-list">
+        @for (player of allPlayers; track player.id) {
+          <li [class.is-imposter-item]="player.isImposter">
+            <span class="player-name">{{ player.name }}:</span>
+            @if (player.isImposter) {
+              <span class="role-text imposter-text">War ein IMPOSTER!
+                @if (player.hintWord) {
+                  <span class="hint-word-resolved">(Hilfswort: {{ player.hintWord }})</span>
+                }
+              </span>
+            } @else {
+              <span class="role-text citizen-text">Kannte das Wort.</span>
+            }
+          </li>
+        } @empty {
+          <li class="empty-list-item">Keine Spielerdaten für die Auflösung vorhanden.</li>
+        }
+      </ul>
+      <button class="action-btn new-round-btn" (click)="startNewRound()">🔄 Neue Runde starten</button>
+    </div>
   }
   @default {
-    <p>Spiel befindet sich in einem unbekannten Zustand.</p>
+    <div class="phase-container default-phase">
+      <p class="error-text">Hoppla! Das Spiel ist in einem unbekannten Zustand.</p>
+    </div>
   }
 }
 
 <style>
-  .card-content {
-    border: 1px solid #ccc;
-    padding: 20px;
-    margin-top: 10px;
-    text-align: center;
+  /* ... (alle bestehenden Stile von :host bis Keyframes) ... */
+  :host {
+    display: flex; /* Flexbox für Zentrierung des Inhalts */
+    flex-direction: column;
+    align-items: center; /* Horizontale Zentrierung */
+    justify-content: flex-start; /* Inhalt oben starten, bei Bedarf anpassen */
+    min-height: 100vh;
+    background-color: var(--bg-color, #1C1C2E);
+    color: var(--text-color-primary, #F5F5F5);
+    padding: 25px 15px;
+    font-family: 'Roboto', 'Segoe UI', sans-serif;
+    box-sizing: border-box;
+    text-align: center; /* Standard-Textausrichtung für die Phasen */
+    overflow-x: hidden;
   }
+
+  /* CSS Variablen (konsistent mit SetupComponent) */
+  :host {
+    --bg-color: #1C1C2E;
+    --surface-color: #2C2C4E;
+    --primary-accent: #8A2BE2; /* Violett */
+    --primary-accent-hover: #7B1FA2;
+    --secondary-accent: #39C5BB; /* Türkis/Mint */
+    --secondary-accent-hover: #26A69A;
+    --danger-color: #EF5350; /* Rot */
+    --warning-color: #FFA726; /* Orange für Imposter-Text */
+    --text-color-primary: #F5F5F5;
+    --text-color-secondary: #B0BEC5;
+    --border-color: #4A4A6E;
+    --highlight-color: var(--secondary-accent); /* Farbe für Hervorhebungen wie das Wort */
+
+    --border-radius-md: 12px;
+    --border-radius-lg: 16px;
+    --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 8px 25px rgba(0, 0, 0, 0.3);
+  }
+
+  .phase-container {
+    width: 100%;
+    max-width: 500px; /* Maximale Breite für bessere Lesbarkeit auf größeren mobilen Screens */
+    padding: 1.5rem 1rem;
+    background-color: var(--surface-color);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-lg);
+    animation: slideInUp 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) backwards;
+    margin-bottom: 2rem; /* Abstand zwischen Phasen, falls mehrere sichtbar wären */
+  }
+
+  h2, h3 {
+    color: var(--text-color-primary);
+    margin-bottom: 1.2rem;
+    font-weight: 600;
+  }
+  h2 {
+    font-size: clamp(1.6rem, 6vw, 2.2rem);
+  }
+  h3 {
+    font-size: clamp(1.3rem, 5vw, 1.9rem);
+    color: var(--text-color-secondary);
+  }
+  .current-player-name {
+    color: var(--primary-accent);
+    font-weight: 700;
+  }
+
+  p, .phase-description, .phase-sub-description, .loading-text, .error-text {
+    color: var(--text-color-secondary);
+    font-size: clamp(0.95rem, 3.5vw, 1.1rem);
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+  .loading-text, .error-text {
+    font-style: italic;
+  }
+  .error-text {
+    color: var(--danger-color);
+  }
+
+  .highlight {
+    color: var(--highlight-color);
+    font-weight: 700;
+  }
+
+  /* NEU: Styling für den Startspieler-Hinweis */
+  .starting-player-info {
+    font-size: clamp(1.1rem, 4.5vw, 1.3rem); /* Etwas größer und auffälliger */
+    color: var(--text-color-primary);
+    margin-top: 0.5rem; /* Weniger oberer Abstand, da schon p davor ist */
+    margin-bottom: 1.5rem;
+    padding: 0.8rem 1rem;
+    background-color: var(--bg-color); /* Dunkler als Phasen-Container für Kontrast */
+    border-radius: var(--border-radius-md);
+    border: 2px dashed var(--primary-accent); /* Auffälliger Rand */
+    font-weight: 500;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+  }
+
+  .highlight-starter { /* Spezifische Hervorhebung für den Startspieler-Namen */
+    color: var(--primary-accent);
+    font-weight: 700;
+    text-transform: uppercase; /* Name hervorheben */
+    letter-spacing: 0.5px;
+  }
+  /* ENDE NEU */
+
+
+  /* Buttons */
+  .action-btn {
+    width: 100%;
+    padding: 0.9rem 1.5rem;
+    border: none;
+    border-radius: var(--border-radius-md);
+    font-size: clamp(1rem, 4vw, 1.15rem);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: var(--shadow-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    margin-top: 1rem;
+  }
+  .action-btn:active {
+    transform: scale(0.97);
+  }
+
+  .reveal-action-btn {
+    background-color: var(--primary-accent);
+    color: white;
+  }
+  .reveal-action-btn:hover {
+    background-color: var(--primary-accent-hover);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .next-player-btn, .resolve-game-btn, .new-round-btn {
+    background-color: var(--secondary-accent);
+    color: var(--bg-color); /* Dunkler Text auf hellem Akzent */
+  }
+  .next-player-btn:hover, .resolve-game-btn:hover, .new-round-btn:hover {
+    background-color: var(--secondary-accent-hover);
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Karte für Rollenanzeige */
+  .card-content {
+    background-color: var(--bg-color); /* Dunkler als die Phasen-Oberfläche für Kontrast */
+    border: 1px solid var(--border-color);
+    padding: 1.5rem 1rem;
+    margin-top: 1.5rem;
+    border-radius: var(--border-radius-md);
+    animation: zoomIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) backwards;
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.3);
+  }
+  .animated-card { /* Zusätzliche Klasse für Animation, falls benötigt */ }
+
   .imposter-text {
-    color: red;
-    font-weight: bold;
+    color: var(--warning-color); /* Orange für gute Lesbarkeit und Warncharakter */
+    font-weight: 700;
+    font-size: clamp(1.2rem, 5vw, 1.6rem);
+    margin-bottom: 0.8rem;
+    animation: pulse 1.5s infinite ease-in-out;
+  }
+  .secret-word-text {
+    color: var(--text-color-primary);
+    font-size: clamp(1.1rem, 4.5vw, 1.5rem);
+    margin-bottom: 0.8rem;
+  }
+  .hint-word, .hint-word-resolved {
+    font-size: clamp(0.85rem, 3vw, 1rem);
+    color: var(--text-color-secondary);
+    font-style: italic;
+    margin-top: -0.5rem;
+    margin-bottom: 1rem;
+  }
+  .hint-word-resolved {
+    display: block; /* Für bessere Formatierung in der Liste */
+    font-size: 0.8em;
+  }
+
+
+  /* Auflösungsliste */
+  .player-roles-list {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0;
+    text-align: left; /* Bessere Lesbarkeit für Listen */
+  }
+  .player-roles-list li {
+    background-color: var(--bg-color);
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.6rem;
+    border-radius: var(--border-radius-md);
+    border-left: 4px solid var(--secondary-accent);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: clamp(0.9rem, 3.8vw, 1.05rem);
+    animation: fadeInListItem 0.5s ease-out backwards;
+  }
+  /* Stagger Animation für List Items (Beispiel für die ersten paar) */
+  .player-roles-list li:nth-child(1) { animation-delay: 0.1s; }
+  .player-roles-list li:nth-child(2) { animation-delay: 0.2s; }
+  .player-roles-list li:nth-child(3) { animation-delay: 0.3s; }
+  /* ... weitere hinzufügen oder eine JS-basierte Lösung für alle */
+
+  .player-roles-list li.is-imposter-item {
+    border-left-color: var(--warning-color);
+  }
+  .player-roles-list .player-name {
+    color: var(--text-color-primary);
+    font-weight: 500;
+  }
+  .player-roles-list .role-text {
+    font-weight: 500;
+  }
+  .player-roles-list .imposter-text { /* In der Liste ist es nur Text, keine Animation */
+    color: var(--warning-color);
+    animation: none; /* Keine Pulse-Animation in der Liste */
+    font-size: inherit; /* Normale Schriftgröße in der Liste */
+  }
+  .player-roles-list .citizen-text {
+    color: var(--secondary-accent);
+  }
+  .empty-list-item {
+    font-style: italic;
+    color: var(--text-color-secondary);
+    justify-content: center;
+    border-left: 4px solid var(--text-color-secondary);
+  }
+
+
+  /* Keyframe Animationen */
+  @keyframes slideInUp {
+    from { opacity: 0; transform: translateY(50px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes zoomIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.9; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes fadeInListItem {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
   }
 </style>

@@ -1,6 +1,8 @@
+// src/app/interfaces/player.ts
 export interface Player {
   id: number;
   name: string;
   isImposter: boolean;
-  isRevealed: boolean; // Um zu steuern, ob die Karte schon aufgedeckt wurde
+  isRevealed: boolean;
+  hintWord?: string; // Optional: Hilfswort für den Imposter
 }

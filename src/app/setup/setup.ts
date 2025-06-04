@@ -1,17 +1,18 @@
+// src/app/setup/setup.component.ts
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
-import { GameService } from '../service/game.service'; // Pfad zum Service beibehalten
+import { GameService } from '../service/game.service';
+import {NgOptimizedImage} from '@angular/common';
 
-// Konstante für LocalStorage-Schlüssel
 const LOCAL_STORAGE_KEY_PLAYERS = 'imposterGamePlayers';
-// Die Konstante DEFAULT_PLAYERS wird nicht mehr benötigt und wurde entfernt.
 
 @Component({
   selector: 'app-setup',
   templateUrl: './setup.html',
   imports: [
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    NgOptimizedImage
   ],
   standalone: true
 })
@@ -26,6 +27,7 @@ export class SetupComponent implements OnInit {
     this.setupForm = this.fb.group({
       playerNames: this.fb.array([]),
       numImposters: [1, [Validators.required, Validators.min(1)]],
+      giveHint: [false] // Neues Formularfeld für die Hilfswort-Option, standardmäßig deaktiviert
     });
   }
 
@@ -35,16 +37,14 @@ export class SetupComponent implements OnInit {
 
   private loadAndInitializePlayers(): void {
     const storedPlayers = this.getPlayersFromLocalStorage();
-    let playersToLoad: string[] = []; // Beginne mit einem leeren Array
+    let playersToLoad: string[] = [];
 
     if (storedPlayers && storedPlayers.length > 0) {
       playersToLoad = storedPlayers;
     }
 
-    // Wenn keine Spieler aus dem localStorage geladen wurden (oder die Liste leer war),
-    // stelle sicher, dass mindestens ein (leeres) Spieler-Eingabefeld vorhanden ist.
     if (playersToLoad.length === 0) {
-      playersToLoad.push(''); // Füge ein leeres Spielerfeld hinzu, damit der Benutzer starten kann
+      playersToLoad.push('');
     }
 
     playersToLoad.forEach(name => {
@@ -102,6 +102,7 @@ export class SetupComponent implements OnInit {
         .filter((name: string) => name !== '');
 
       const numImposters: number = this.setupForm.value.numImposters;
+      const giveHint: boolean = this.setupForm.value.giveHint; // Wert der Checkbox auslesen
 
       if (names.length === 0) {
         alert('Bitte geben Sie mindestens einen gültigen Spielernamen ein.');
@@ -115,7 +116,8 @@ export class SetupComponent implements OnInit {
 
       this.savePlayersToLocalStorage(names);
 
-      if (this.gameService.setupGame(names, numImposters)) {
+      // 'giveHint' an setupGame übergeben
+      if (this.gameService.setupGame(names, numImposters, giveHint)) {
         this.router.navigate(['/game']);
       } else {
         alert('Fehler beim Setup des Spiels. Bitte überprüfe die Eingaben.');

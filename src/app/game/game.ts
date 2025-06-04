@@ -1,26 +1,31 @@
+// src/app/game/game.component.ts
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import {Player} from '../interfaces/player';
-import {GameService} from '../service/game.service';
+import { Player } from '../interfaces/player';
+import { GameService } from '../service/game.service';
 
 @Component({
   selector: 'app-game',
   templateUrl: './game.html',
   standalone: true
+  // Kein 'imports' Array hier, da die Direktiven (@switch, @if, @for) jetzt Teil von Angular Core sind
+  // und nicht mehr separat importiert werden müssen, wenn die Komponente standalone ist
+  // und das Component Template diese direkt nutzt.
 })
 export class GameComponent implements OnInit, OnDestroy {
   currentPlayer: Player | null = null;
   secretWord: string = '';
   gamePhase: 'setup' | 'reveal' | 'discussion' | 'resolved' = 'reveal';
-  allPlayers: Player[] = []; // Für die Auflösung
+  allPlayers: Player[] = [];
+  isCardRevealedForCurrentPlayer: boolean = false;
+  discussionStartingPlayer: string | null = null; // NEU: Für den Startspieler
 
   private playersSub!: Subscription;
   private wordSub!: Subscription;
   private turnSub!: Subscription;
   private phaseSub!: Subscription;
-
-  isCardRevealedForCurrentPlayer: boolean = false;
+  private discussionStarterSub!: Subscription; // NEU: Subscription
 
   constructor(public gameService: GameService, private router: Router) {}
 
@@ -28,16 +33,14 @@ export class GameComponent implements OnInit, OnDestroy {
     this.phaseSub = this.gameService.gamePhase$.subscribe(phase => {
       this.gamePhase = phase;
       if (phase === 'setup') {
-        this.router.navigate(['/setup']); // Wenn Service resettet wird, zurück zum Setup
+        this.router.navigate(['/setup']);
       }
       if (phase === 'resolved') {
-        this.allPlayers = this.gameService.getPlayers(); // Alle Spieler für die Auflösung holen
+        this.allPlayers = this.gameService.getPlayers();
       }
     });
 
     this.playersSub = this.gameService.players$.subscribe(players => {
-      // Aktualisiert currentPlayer, falls sich die Liste ändert (z.B. isRevealed)
-      // Wird auch für die Auflösungsansicht verwendet
       this.allPlayers = players;
       this.updateCurrentPlayerView();
     });
@@ -46,10 +49,14 @@ export class GameComponent implements OnInit, OnDestroy {
 
     this.turnSub = this.gameService.currentTurnIndex$.subscribe(() => {
       this.updateCurrentPlayerView();
-      this.isCardRevealedForCurrentPlayer = false; // Karte für neuen Spieler ist wieder verdeckt
+      this.isCardRevealedForCurrentPlayer = false;
     });
 
-    // Initialen Spieler setzen
+    // NEU: Startspieler für Diskussion abonnieren
+    this.discussionStarterSub = this.gameService.discussionStartingPlayerName$.subscribe(name => {
+      this.discussionStartingPlayer = name;
+    });
+
     this.updateCurrentPlayerView();
     if (!this.currentPlayer && this.gameService.getPlayers().length === 0) {
       console.log("Keine Spieler initialisiert, zurück zum Setup.");
@@ -60,8 +67,6 @@ export class GameComponent implements OnInit, OnDestroy {
   private updateCurrentPlayerView(): void {
     this.currentPlayer = this.gameService.getCurrentPlayer();
     if (this.currentPlayer) {
-      // Überprüfen, ob die Karte für den aktuellen Spieler *im Service* bereits als revealed markiert ist
-      // Dies ist nützlich, wenn man z.B. zurück navigiert oder die Komponente neu geladen wird.
       this.isCardRevealedForCurrentPlayer = this.currentPlayer.isRevealed;
     }
   }
@@ -73,7 +78,6 @@ export class GameComponent implements OnInit, OnDestroy {
 
   nextPlayer(): void {
     this.gameService.nextPlayer();
-    // isCardRevealedForCurrentPlayer wird im turnSub oder updateCurrentPlayerView zurückgesetzt
   }
 
   resolveGame(): void {
@@ -82,7 +86,6 @@ export class GameComponent implements OnInit, OnDestroy {
 
   startNewRound(): void {
     this.gameService.startNewRound();
-    // Navigation zum Setup wird durch phaseSub in ngOnInit gehandhabt
   }
 
   ngOnDestroy(): void {
@@ -90,5 +93,6 @@ export class GameComponent implements OnInit, OnDestroy {
     this.wordSub?.unsubscribe();
     this.turnSub?.unsubscribe();
     this.phaseSub?.unsubscribe();
+    this.discussionStarterSub?.unsubscribe(); // NEU: Unsubscribe
   }
 }
