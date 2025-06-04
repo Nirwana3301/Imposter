@@ -1,0 +1,67 @@
+@switch (gamePhase) {
+  @case ('reveal') {
+    @if (currentPlayer) {
+      <h2>Am Zug: {{ currentPlayer.name }}</h2>
+
+      @if (!isCardRevealedForCurrentPlayer) {
+        <button (click)="revealCard()">
+          Karte aufdecken
+        </button>
+      } @else {
+        <div class="card-content">
+          <h3>Deine Rolle:</h3>
+          @if (currentPlayer.isImposter) {
+            <p class="imposter-text">Du bist der IMPOSTER!</p>
+          } @else {
+            <p>Das Wort ist: <strong>{{ secretWord }}</strong></p>
+          }
+          <button (click)="nextPlayer()">
+            Verstanden & Nächster Spieler
+          </button>
+        </div>
+      }
+    } @else {
+      <p>Lade Spielerdaten...</p> }
+  }
+  @case ('discussion') {
+    <h2>Diskussionsphase!</h2>
+    <p>Alle Spieler haben ihre Rollen gesehen. Findet den Imposter!</p>
+    <button (click)="resolveGame()">Spiel auflösen</button>
+  }
+  @case ('resolved') {
+    <h2>Auflösung</h2>
+    <p>Das geheime Wort war: <strong>{{ secretWord }}</strong></p>
+    <h3>Spieler und ihre Rollen:</h3>
+    <ul>
+      @for (player of allPlayers; track player.id) {
+        <li>
+          {{ player.name }}:
+          @if (player.isImposter) {
+            <span class="imposter-text">War ein IMPOSTER!</span>
+          } @else {
+            <span>Kannte das Wort.</span>
+          }
+        </li>
+      } @empty {
+        <li>Keine Spielerdaten für die Auflösung vorhanden.</li>
+      }
+    </ul>
+    <button (click)="startNewRound()">Neue Runde starten</button>
+  }
+  @default {
+    <p>Spiel befindet sich in einem unbekannten Zustand.</p>
+  }
+}
+
+<style>
+  .card-content {
+    border: 1px solid #ccc;
+    padding: 20px;
+    margin-top: 10px;
+    text-align: center;
+  }
+  .imposter-text {
+    color: red;
+    font-weight: bold;
+  }
+</style>

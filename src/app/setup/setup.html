@@ -1,0 +1,36 @@
+<h2>Spiel Setup</h2>
+<form [formGroup]="setupForm" (ngSubmit)="onSubmit()">
+  <div>
+    <label for="numImposters">Anzahl der Imposter: </label>
+    <input id="numImposters" type="number" formControlName="numImposters" min="1">
+    @if(setupForm.get('numImposters')?.invalid && setupForm.get('numImposters')?.touched) {
+      <small class="error">Anzahl der Imposter ist erforderlich und muss mindestens 1 sein.</small>
+    }
+  </div>
+
+  <hr>
+
+  <h3>Spieler:</h3>
+  <div formArrayName="playerNames">
+    @for(playerName of playerNames.controls; track playerName; let i = $index) {
+      <div class="player-input">
+        <label for="player-{{i}}">Spieler {{ i + 1 }}: </label>
+        <input id="player-{{i}}" type="text" [formControlName]="i">
+        <button type="button" (click)="removePlayer(i)" >Entfernen</button>
+        @if(playerName.invalid && playerName.touched) {
+          <small class="error">Spielername ist erforderlich.</small>
+        }
+      </div>
+    }
+  </div>
+  <button type="button" (click)="addPlayer()">Weiteren Spieler hinzufügen</button>
+
+  <hr>
+  <button type="submit" [disabled]="setupForm.invalid">Spiel starten</button>
+</form>
+
+<style>
+  .player-input { margin-bottom: 10px; }
+  .error { color: red; font-size: 0.9em; }
+  hr { margin: 20px 0; }
+</style>
